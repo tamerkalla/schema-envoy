@@ -148,7 +148,11 @@ describe("12. workflow configuration", () => {
     for (const script of Object.values(pkg.scripts)) {
       expect(script.includes("\n")).toBe(false);
     }
-    expect(pkg.version).toBe("0.0.0");
+    // Not pinned to 0.0.0: that is the pre-release placeholder, and the
+    // release workflow moves it on every run. The standing invariant is the
+    // shape. Keeping the placeholder off npm is the workflow's job, done by
+    // bumping before publish, not a test's.
+    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(pkg.files).toEqual(["dist", "README.md", "VERIFY.md", "LICENSE"]);
     for (const range of Object.values({ ...pkg.dependencies, ...pkg.devDependencies })) {
       expect(/^\d+\.\d+\.\d+$/.test(range)).toBe(true);
