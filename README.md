@@ -1,7 +1,5 @@
 # schema-envoy
 
-[![CI](https://github.com/tamerkalla/schema-envoy/actions/workflows/ci.yml/badge.svg)](https://github.com/tamerkalla/schema-envoy/actions/workflows/ci.yml)
-
 Every LLM provider accepts a *subset* of JSON Schema, not JSON Schema. Every library that
 talks to those providers closes the gap the same way: it walks the schema and deletes the
 keywords the provider does not list. That deletion is silent. The resulting schema is valid,
@@ -9,6 +7,11 @@ the API call succeeds, and the schema now accepts values your own validator reje
 
 That is not a bug anyone is going to fix, because the deletion is the documented behaviour of
 the provider rather than a defect in it.
+
+[![CI](https://github.com/tamerkalla/schema-envoy/actions/workflows/ci.yml/badge.svg)](https://github.com/tamerkalla/schema-envoy/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/schema-envoy.svg)](https://www.npmjs.com/package/schema-envoy)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![provenance](https://img.shields.io/badge/provenance-attested-brightgreen.svg)](https://www.npmjs.com/package/schema-envoy)
 
 `schema-envoy` performs the conversion and tells you exactly what it cost. Three things come
 back:
