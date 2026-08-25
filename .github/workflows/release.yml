@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       bump:
+        description: 'patch, minor or major'
         type: choice
         default: patch
         options: [patch, minor, major]
