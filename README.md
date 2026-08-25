@@ -28,7 +28,7 @@ npm install schema-envoy
 ```
 
 ```ts
-import { adapt, residual } from "schema-envoy";
+import { adapt, explain, residual } from "schema-envoy";
 
 const source = {
   type: "object",
@@ -40,12 +40,15 @@ const source = {
   additionalProperties: false,
 };
 
-// Throws SchemaDivergenceError, because strict mode will not enforce
-// `format`, `minimum` or `maximum`.
+// adapt(source, "openai.strict") would throw SchemaDivergenceError here,
+// because strict mode will not enforce `format`, `minimum` or `maximum`.
+// Opt into a report to inspect the cost instead of throwing.
 const { schema, report } = adapt(source, "openai.strict", { onDivergence: "report" });
 
-// Send `schema` to the provider.
-// Check what comes back against the constraints the provider dropped.
+console.log(explain(report)); // every keyword dropped, with a witness value
+
+// Send `schema` to the provider, then check what comes back
+// against the constraints the provider dropped.
 const guard = residual(source, "openai.strict");
 if (!guard.validate(modelOutput)) console.error(guard.errors(modelOutput));
 ```
