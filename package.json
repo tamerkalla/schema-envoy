@@ -1,6 +1,6 @@
 {
   "name": "schema-envoy",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Convert a JSON Schema to an LLM provider's accepted subset and get a report of every value whose validity changed.",
   "license": "MIT",
   "type": "module",
