@@ -1,0 +1,70 @@
+{
+  "name": "schema-envoy",
+  "version": "0.0.0",
+  "description": "Convert a JSON Schema to an LLM provider's accepted subset and get a report of every value whose validity changed.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "schema-envoy": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "VERIFY.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "keywords": [
+    "json-schema",
+    "openai",
+    "gemini",
+    "structured-outputs",
+    "function-calling",
+    "tool-calling",
+    "llm",
+    "ajv",
+    "mcp",
+    "schema-conversion"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tamerkalla/schema-envoy.git"
+  },
+  "homepage": "https://github.com/tamerkalla/schema-envoy#readme",
+  "bugs": {
+    "url": "https://github.com/tamerkalla/schema-envoy/issues"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run typecheck && npm run test && npm run build"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "4.0.9",
+    "@types/node": "22.20.1",
+    "@vitest/coverage-v8": "4.1.11",
+    "js-yaml": "4.3.1",
+    "tsup": "8.5.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  }
+}

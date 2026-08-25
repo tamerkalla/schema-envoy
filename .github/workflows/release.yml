@@ -1,0 +1,84 @@
+name: Release
+
+# No tag trigger. This workflow creates the tag itself — a tag trigger
+# would race it and try to publish the same version twice.
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        type: choice
+        default: patch
+        options: [patch, minor, major]
+      auth:
+        description: 'oidc = trusted publishing. token = FIRST PUBLISH ONLY.'
+        type: choice
+        default: oidc
+        options: [oidc, token]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write    # push the version commit + tag, create the Release
+      id-token: write    # npm trusted publishing (OIDC)
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      # Two setup steps, not one. Supplying a registry URL to setup-node makes
+      # it write an .npmrc carrying a token placeholder and export that
+      # variable JOB-WIDE. npm then finds a configured credential, never
+      # attempts the OIDC exchange, and authenticates as nobody. So the OIDC
+      # path must not carry that input at all. npm defaults to
+      # registry.npmjs.org regardless, so nothing is lost. Do not add it back.
+      - uses: actions/setup-node@v4
+        if: ${{ inputs.auth == 'token' }}
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - uses: actions/setup-node@v4
+        if: ${{ inputs.auth != 'token' }}
+        with:
+          node-version: 22
+
+      # Node 22 ships npm 10; OIDC publishing needs 11.5.1+
+      - run: npm install -g npm@latest
+
+      - run: npm ci
+      - run: npm test        # verify BEFORE the version moves
+      - run: npm run build
+
+      - name: Bump and tag
+        id: bump
+        run: |
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          npm version '${{ inputs.bump }}' -m 'Release v%s'
+          echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # Publish first: a failed publish leaves main untouched and the
+      # run is simply repeatable. The reverse strands a version in git
+      # that does not exist on npm.
+      - name: Publish (token)
+        if: ${{ inputs.auth == 'token' }}
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # No auth variable in env: under OIDC it must be absent entirely,
+      # not empty. Do not add one back.
+      - name: Publish (OIDC)
+        if: ${{ inputs.auth != 'token' }}
+        run: npm publish --access public
+
+      - run: git push origin HEAD:main --follow-tags
+
+      # Last, deliberately: npm and git are both already correct by the time
+      # this runs, so a failure here leaves the published package and the
+      # pushed tag untouched and the release can be made by hand from the tag.
+      # No `|| true` — a step that cannot fail reports success it did not earn.
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "v${{ steps.bump.outputs.version }}" --title "v${{ steps.bump.outputs.version }}" --generate-notes
