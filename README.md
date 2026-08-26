@@ -201,6 +201,16 @@ it works with zod, valibot, arktype, typebox, hand-written schemas and raw MCP t
 alike. It converts and reports; it never makes the provider call, and it never rewrites your
 source schema.
 
+## Related
+
+[`schema-fit`](https://github.com/tamerkalla/schema-fit) solves the mirror
+problem. It rewrites a schema so a provider will accept it while guaranteeing it
+never widens what the schema allows — narrowing instead, and telling you where.
+
+Use `schema-fit` when widening is unacceptable and you would rather lose values
+than gain them. Use `schema-envoy` when the provider's subset forces widening
+anyway and you need to know exactly which values it let through.
+
 ## License
 
 MIT
