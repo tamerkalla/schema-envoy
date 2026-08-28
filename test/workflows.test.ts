@@ -128,6 +128,18 @@ describe("12. workflow configuration", () => {
     expect(plan?.run ?? "").toContain("release=false");
   });
 
+  it("12. the bump step's version output is read from package.json, never captured from npm version's stdout", () => {
+    // npm version prints the new version WITH a leading "v" ("v0.1.3"). The
+    // release step does `gh release create "v${{ steps.bump.outputs.version }}"`,
+    // so if that output were ever npm version's own stdout instead of a fresh
+    // read of package.json, the tag and release title would come out "vv0.1.3" —
+    // exactly the residue found in three sibling repositories' release history.
+    const bump = steps.find((step) => step.name === "Bump and tag");
+    const run = bump?.run ?? "";
+    expect(run).toMatch(/\$\(node -p "require\('\.\/package\.json'\)\.version"\)/);
+    expect(run).not.toMatch(/\$\(npm version/);
+  });
+
   it("12. only the Plan and bump steps carry a multi-line script", () => {
     const multiline = steps.filter((step) => (step.run ?? "").includes("\n"));
     expect(multiline.length).toBe(2);
