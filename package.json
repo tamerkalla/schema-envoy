@@ -50,6 +50,7 @@
   },
   "scripts": {
     "build": "tsup",
+    "pretest": "npm run build",
     "test": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "verify": "npm run typecheck && npm run test && npm run build"

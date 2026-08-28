@@ -1,15 +1,23 @@
 # Verifying schema-envoy
 
-```
-npx --yes schema-envoy@latest --self-check
+This reproduces the five baselines in the README's Measured table from the published
+package, in a clean directory. It does not require this repository to be checked out.
+
+```bash
+mkdir -p schema-envoy-verify && cd schema-envoy-verify
+npm init -y >/dev/null 2>&1
+npm install schema-envoy@latest >/dev/null 2>&1
+npx schema-envoy --self-check
 ```
 
-| baseline | corpus | agreed | widened | narrowed |
-|---|---|---|---|---|
-| B1 gemini.functionDeclarationParameters | 720 | 648 | 72 | 0 |
-| B2 naive strict required-fill | 12 | 1 | 0 | 11 |
-| B3 gemini.parametersJsonSchema | 96 | 2 | 94 | 0 |
-| B4 oneOf read as anyOf | 4 | 3 | 1 | 0 |
-| B5 openai.strict | 72 | 36 | 35 | 1 |
+Expected output:
+
+```text
+B1 gemini.functionDeclarationParameters ok checked=720 agreed=648 widened=72 narrowed=0
+B2 naive strict required-fill ok checked=12 agreed=1 widened=0 narrowed=11
+B3 gemini.parametersJsonSchema ok checked=96 agreed=2 widened=94 narrowed=0
+B4 oneOf read as anyOf ok checked=4 agreed=3 widened=1 narrowed=0
+B5 openai.strict ok checked=72 agreed=36 widened=35 narrowed=1
+```
 
 Exit code 0 means every row reproduced.

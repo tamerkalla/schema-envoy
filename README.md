@@ -2,13 +2,22 @@
 
 Every LLM provider accepts a *subset* of JSON Schema, not JSON Schema. Every library that
 talks to those providers closes the gap the same way: it walks the schema and deletes the
-keywords the provider does not list. That deletion is silent. The resulting schema is valid,
-the API call succeeds, and the schema now accepts values your own validator rejects.
+keywords the provider does not list. For most of them, that deletion is silent: the resulting
+schema is valid, the API call succeeds, and the schema now accepts values your own validator
+rejects. That is not a bug anyone is going to fix, because the deletion is the documented
+behaviour of the provider rather than a defect in it.
 
-That is not a bug anyone is going to fix, because the deletion is the documented behaviour of
-the provider rather than a defect in it.
+As of 27 August 2026, that is starting to change for one provider in one SDK, not the
+ecosystem: the Vercel AI SDK's Google provider (`@ai-sdk/google`) has an open, unmerged pull
+request — [vercel/ai#19664](https://github.com/vercel/ai/pull/19664) — that will emit a
+warning naming each JSON Schema keyword its schema conversion removes or weakens.
 
-[![CI](https://github.com/tamerkalla/schema-envoy/actions/workflows/ci.yml/badge.svg)](https://github.com/tamerkalla/schema-envoy/actions/workflows/ci.yml)
+A warning is not a validator, though. It tells you widening happened; it does not stop a
+widened value from passing. `schema-envoy`'s primary claim is the **`residual()`** export: a
+compiled validator over precisely the constraints the provider dropped, so you can reject the
+widened value instead of merely learning that it widened.
+
+[![build](https://github.com/tamerkalla/schema-envoy/actions/workflows/release.yml/badge.svg)](https://github.com/tamerkalla/schema-envoy/actions/workflows/release.yml)
 [![npm](https://img.shields.io/npm/v/schema-envoy.svg)](https://www.npmjs.com/package/schema-envoy)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![provenance](https://img.shields.io/badge/provenance-attested-brightgreen.svg)](https://www.npmjs.com/package/schema-envoy)
@@ -53,7 +62,23 @@ console.log(explain(report)); // every keyword dropped, with a witness value
 // Send `schema` to the provider, then check what comes back
 // against the constraints the provider dropped.
 const guard = residual(source, "openai.strict");
-if (!guard.validate(modelOutput)) console.error(guard.errors(modelOutput));
+const modelOutput = { email: "not-an-email", score: 99 }; // what the provider let through
+if (!guard.validate(modelOutput)) console.log(guard.errors(modelOutput));
+```
+
+Output:
+
+```text
+schema-envoy: 3 divergences converting to openai.strict
+source: https://developers.openai.com/api/docs/guides/structured-outputs (documented behaviour as of 2026-08-24, captured 2026-08-24)
+corpus: checked 4 - agreed 0, widened 4, narrowed 0
+keywords: 3 removed, 0 rewritten
+divergences:
+  [widen] #/properties/email format (documented unsupported) evidence=value - format is documented as unsupported by OpenAI structured outputs (strict); it is dropped and the provider will not enforce it - witness {"email":"__envoy_invalid_format__","score":0}
+  [widen] #/properties/score minimum (documented unsupported) evidence=value - minimum is documented as unsupported by OpenAI structured outputs (strict); it is dropped and the provider will not enforce it - witness {"email":"a","score":-1}
+  [widen] #/properties/score maximum (documented unsupported) evidence=value - maximum is documented as unsupported by OpenAI structured outputs (strict); it is dropped and the provider will not enforce it - witness {"email":"a","score":11}
+not equivalent: at least one value changed accept/reject status.
+[ '/email must match format "email"', '/score must be <= 10' ]
 ```
 
 ## What the report says
@@ -135,6 +160,16 @@ Reproduce all five yourself:
 npx --yes schema-envoy@latest --self-check
 ```
 
+Output:
+
+```text
+B1 gemini.functionDeclarationParameters ok checked=720 agreed=648 widened=72 narrowed=0
+B2 naive strict required-fill ok checked=12 agreed=1 widened=0 narrowed=11
+B3 gemini.parametersJsonSchema ok checked=96 agreed=2 widened=94 narrowed=0
+B4 oneOf read as anyOf ok checked=4 agreed=3 widened=1 narrowed=0
+B5 openai.strict ok checked=72 agreed=36 widened=35 narrowed=1
+```
+
 See [VERIFY.md](./VERIFY.md).
 
 ## API
@@ -203,7 +238,7 @@ source schema.
 
 ## Related
 
-[`schema-fit`](https://github.com/tamerkalla/schema-fit) solves the mirror
+[`schema-fit`](https://www.npmjs.com/package/schema-fit) solves the mirror
 problem. It rewrites a schema so a provider will accept it while guaranteeing it
 never widens what the schema allows — narrowing instead, and telling you where.
 
