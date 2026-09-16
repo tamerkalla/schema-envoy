@@ -51,10 +51,16 @@ describe("README.md structure", () => {
     expect(claimSection).toMatch(/Vercel AI SDK/);
   });
 
-  test("names the open, unmerged upstream PR with a date", () => {
-    expect(readme).toMatch(/vercel\/ai#19664/);
-    expect(readme).toMatch(/open, unmerged/);
-    expect(readme).toMatch(/27 August 2026/);
+  test("names the upstream change with a date, and keeps it scoped to one SDK", () => {
+    // 19664 was the warning PR this README used to cite as open and unmerged.
+    // 20757 superseded it on 2026-09-14 by deleting the lossy conversion
+    // rather than reporting on it, so the old wording asserted something
+    // false. The scope clause is pinned too: the claim is only ever about one
+    // SDK's handling, never about the provider's accepted subset.
+    expect(readme).toMatch(/vercel\/ai#20757/);
+    expect(readme).toMatch(/14 September 2026/);
+    expect(readme).toMatch(/not the\s+ecosystem/);
+    expect(readme).not.toMatch(/open, unmerged/);
   });
 
   test("the pitch points at residual() by name", () => {
@@ -153,7 +159,7 @@ describe("every code example in VERIFY.md is executed and its output matches", (
       try {
         // The doc installs from the registry; the test instead unpacks the
         // tarball this repository just built into node_modules, and copies
-        // this repo's own dependency tree over — reproducing the installed
+        // this repo's own dependency tree over, reproducing the installed
         // layout without `npm install`, which for a fresh, lockfile-less
         // project needs to hit the network to resolve versions, and no test
         // may reach the network.

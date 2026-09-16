@@ -132,7 +132,7 @@ describe("12. workflow configuration", () => {
     // npm version prints the new version WITH a leading "v" ("v0.1.3"). The
     // release step does `gh release create "v${{ steps.bump.outputs.version }}"`,
     // so if that output were ever npm version's own stdout instead of a fresh
-    // read of package.json, the tag and release title would come out "vv0.1.3" —
+    // read of package.json, the tag and release title would come out "vv0.1.3",
     // exactly the residue found in three sibling repositories' release history.
     const bump = steps.find((step) => step.name === "Bump and tag");
     const run = bump?.run ?? "";

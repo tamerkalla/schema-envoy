@@ -7,10 +7,15 @@ schema is valid, the API call succeeds, and the schema now accepts values your o
 rejects. That is not a bug anyone is going to fix, because the deletion is the documented
 behaviour of the provider rather than a defect in it.
 
-As of 27 August 2026, that is starting to change for one provider in one SDK, not the
-ecosystem: the Vercel AI SDK's Google provider (`@ai-sdk/google`) has an open, unmerged pull
-request — [vercel/ai#19664](https://github.com/vercel/ai/pull/19664) — that will emit a
-warning naming each JSON Schema keyword its schema conversion removes or weakens.
+As of 14 September 2026, that has changed for one provider in one SDK, not the
+ecosystem, and it changed more thoroughly than a warning.
+[vercel/ai#20757](https://github.com/vercel/ai/pull/20757) removed the Vercel AI SDK's lossy
+Google conversion outright rather than reporting on it, sending the schema natively through
+`parametersJsonSchema` for tools and `responseJsonSchema` for structured output, in
+`@ai-sdk/google` 4.0.70 and `@ai-sdk/google-vertex` 5.0.82. For that one combination there is
+no deletion left to report or to validate against. The provider's own accepted subset is
+unchanged: what moved is one SDK's handling of it, and everywhere else the deletion is still
+silent.
 
 A warning is not a validator, though. It tells you widening happened; it does not stop a
 widened value from passing. `schema-envoy`'s primary claim is the **`residual()`** export: a
@@ -28,8 +33,8 @@ back:
 1. the provider-valid schema,
 2. a report naming every keyword removed or rewritten, with a concrete witness value whose
    accept/reject status changed,
-3. a **residual validator** — a compiled validator over precisely the constraints the provider
-   dropped — so the constraints you wrote are enforced somewhere, at the boundary where the
+3. a **residual validator**, a compiled validator over precisely the constraints the provider
+   dropped, so the constraints you wrote are enforced somewhere, at the boundary where the
    model's output comes back.
 
 By default `adapt()` throws when the conversion changes the accepted value set. Silence is
@@ -86,7 +91,7 @@ not equivalent: at least one value changed accept/reject status.
 ```ts
 report.removed;      // { pointer, keyword, documented }[]
 report.rewritten;    // { pointer, from, to }[]
-report.warnings;     // { pointer, message }[]  — request-time limits, not value changes
+report.warnings;     // { pointer, message }[]  request-time limits, not value changes
 report.divergences;  // { pointer, keyword, effect, evidence, documented, reason, witness? }[]
 report.differential; // { checked, agreed, widened, narrowed, ...Witnesses }
 report.equivalent;   // divergences.length === 0
@@ -94,15 +99,15 @@ report.equivalent;   // divergences.length === 0
 
 Every divergence carries an `effect` of `widen`, `narrow` or `unrepresentable`, and an
 `evidence` of `value` or `keyword`. `evidence: "value"` means a concrete input was found whose
-accept/reject status differs between the two schemas — the divergence is proved by
+accept/reject status differs between the two schemas, so the divergence is proved by
 construction. `evidence: "keyword"` means the constraint was demonstrably dropped but no
 witness could be built for it, usually because the surrounding schema is not seedable.
 
 `documented` is the difference between two very different claims:
 
-- `documented: true` — the provider's published source names this keyword as unsupported. The
+- `documented: true`. The provider's published source names this keyword as unsupported. The
   removal is the provider's stated behaviour.
-- `documented: false` — the provider's published source does not mention the keyword either
+- `documented: false`. The provider's published source does not mention the keyword either
   way. This package drops it conservatively rather than gambling that it is honoured, and says
   so. `explain()` renders the two differently for exactly this reason.
 
@@ -149,8 +154,8 @@ values the source rejects and the converted schema accepts.
 
 B5 is a five-property schema that accepted 2 of its 72-value corpus before conversion and 36
 after. Strict mode constrains *structure*: it does not enforce `pattern`, `format`, `minimum`,
-`maximum`, `multipleOf`, `minItems`, `maxItems` or `uniqueItems`. B2 is the naive conversion —
-required-filling without re-typing the newly required properties as nullable — and shows why
+`maximum`, `multipleOf`, `minItems`, `maxItems` or `uniqueItems`. B2 is the naive conversion,
+required-filling without re-typing the newly required properties as nullable, and shows why
 `openai.strict` performs that rewrite: without it the conversion *narrows*, rejecting 11 of 12
 values the source accepted.
 
@@ -194,7 +199,7 @@ target(id): TargetProfile
 Errors: `SchemaEnvoyError` is the base. `SchemaDivergenceError` carries the full `report`.
 `UnknownTargetError` carries the `id`. `InvalidSchemaError` carries the `pointer`.
 `SchemaProbeError` carries a `detail` and means the differential could not be performed at
-all — it is never downgraded to a finding, and an empty divergence list caused by a probe
+all. It is never downgraded to a finding, and an empty divergence list caused by a probe
 failure is never returned as `equivalent: true`.
 
 `adapt`, `differential`, `residual` and `explain` deep-clone their inputs and never mutate an
@@ -211,8 +216,8 @@ this package, and no module reads the clock.
 3. **Generate witnesses.** A seed instance is built from the source schema, then mutated at
    every pointer where a keyword changed. A candidate becomes a witness only if it actually
    flips; candidates that agree on both sides are discarded silently.
-4. **Differential.** Both schemas are compiled with separate `ajv` instances — with
-   `ajv-formats` registered, so `format` is genuinely evaluated — and the corpus is classified
+4. **Differential.** Both schemas are compiled with separate `ajv` instances, with
+   `ajv-formats` registered so `format` is genuinely evaluated, and the corpus is classified
    into agreed, widened and narrowed.
 5. **Sanity floor.** A conversion that deleted keywords and then reported perfect equivalence
    is a broken harness, not a clean result, and fails loudly.
@@ -231,7 +236,7 @@ the library is the product.
 
 ## Scope
 
-The input is JSON Schema, so this package depends on no schema library and no provider SDK —
+The input is JSON Schema, so this package depends on no schema library and no provider SDK:
 it works with zod, valibot, arktype, typebox, hand-written schemas and raw MCP tool schemas
 alike. It converts and reports; it never makes the provider call, and it never rewrites your
 source schema.
@@ -240,7 +245,7 @@ source schema.
 
 [`schema-fit`](https://www.npmjs.com/package/schema-fit) solves the mirror
 problem. It rewrites a schema so a provider will accept it while guaranteeing it
-never widens what the schema allows — narrowing instead, and telling you where.
+never widens what the schema allows. It narrows instead, and tells you where.
 
 Use `schema-fit` when widening is unacceptable and you would rather lose values
 than gain them. Use `schema-envoy` when the provider's subset forces widening

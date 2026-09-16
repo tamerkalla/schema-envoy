@@ -7,7 +7,7 @@ import type { TargetProfile } from "../types.js";
  *
  * `deny` is empty on purpose. The source is an exhaustive interface rather
  * than a denylist, so a keyword that does not appear here is not "documented
- * as unsupported" — it is simply not expressible, and the report says so by
+ * as unsupported". It is simply not expressible, and the report says so by
  * flagging every such removal as undocumented.
  */
 export const geminiFunctionDeclarationParameters: TargetProfile = Object.freeze({
